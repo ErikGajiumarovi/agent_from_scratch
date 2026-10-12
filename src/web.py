@@ -7,6 +7,8 @@
 - GET  /api/status   — провайдер, модель, тред, путь к БД, число сообщений
 - GET  /api/models   — провайдер, текущая модель, курированный список
 - GET  /api/history  — сырые сообщения текущего треда
+- GET  /api/subchats  — карточки субчатов (запуски ask_subagent)
+- GET  /api/subchat?id=N — субчат целиком: задача, события, итог
 - GET  /api/chat?text=... — ход диалога, события идут через SSE
 - POST /api/reset    — очистить тред
 - POST /api/model    — переключить модель (JSON {"name": "..."})
@@ -19,6 +21,7 @@ from pathlib import Path
 
 from src import agent_core, config
 from src.history_store import dump_messages
+from src.subagent import get_subchat, list_subchats
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
@@ -65,6 +68,18 @@ class Handler(BaseHTTPRequestHandler):
                               "models": config.available_models()})
         elif parsed.path == "/api/history":
             _send_json(self, {"messages": dump_messages(agent_core.current_messages())})
+        elif parsed.path == "/api/subchats":
+            _send_json(self, {"subchats": list_subchats()})
+        elif parsed.path == "/api/subchat":
+            try:
+                sid = int(urllib.parse.parse_qs(parsed.query).get("id", [""])[0])
+            except ValueError:
+                sid = -1
+            entry = get_subchat(sid)
+            if entry is None:
+                _send_json(self, {"error": "нет такого субчата"}, status=404)
+            else:
+                _send_json(self, {"subchat": entry})
         elif parsed.path == "/api/chat":
             text = urllib.parse.parse_qs(parsed.query).get("text", [""])[0].strip()
             if not text:

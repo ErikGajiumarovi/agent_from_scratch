@@ -47,11 +47,20 @@
   .ev.error .tag { color: #b00020; }
   .ev pre { background: #222; color: #ddd; padding: 8px; border-radius: 6px;
             overflow-x: auto; font-size: 11.5px; }
-  #state { border-top: 1px solid #eee; max-height: 38%; overflow-y: auto; padding: 8px 12px; }
+  #state { border-top: 1px solid #eee; max-height: 30%; overflow-y: auto; padding: 8px 12px; }
   #state details { font-size: 12px; margin-bottom: 4px; }
   #state summary { cursor: pointer; }
   #state pre { background: #222; color: #ddd; padding: 8px; border-radius: 6px;
                overflow-x: auto; font-size: 11px; }
+  #subchats { border-top: 1px solid #eee; max-height: 30%; overflow-y: auto; padding: 8px 12px;
+              display: flex; flex-direction: column; gap: 6px; }
+  #subchats details.sub { border: 1px solid #d8e2f0; border-radius: 6px; background: #f4f8ff;
+                          font-size: 12.5px; padding: 6px 8px; }
+  #subchats summary { cursor: pointer; }
+  #subchats .sub-ev { margin: 4px 0 4px 12px; }
+  #subchats .sub-ev .tag { font-weight: 700; }
+  #subchats .sub-result { margin: 6px 0 2px 12px; background: #e8f0fe; border-radius: 6px;
+                          padding: 6px 8px; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -74,6 +83,8 @@
   <section id="raw-pane">
     <h2>Под капотом (сырые события хода)</h2>
     <div id="rawlog"><div class="ev status"><span class="tag">idle</span> отправьте сообщение — здесь появятся вызовы модели и инструментов</div></div>
+    <h2>Субчаты (запуски субагента)</h2>
+    <div id="subchats"><div class="ev status"><span class="tag">idle</span> пока пусто — субагент запускается через ask_subagent</div></div>
     <h2>Состояние треда (все сообщения)</h2>
     <div id="state"></div>
   </section>
@@ -146,8 +157,49 @@ async function refresh() {
       st.provider + " · тред " + st.thread_id + " · " + st.message_count + " сообщений · " + st.db_path;
     renderModelSelect(mo);
     renderHistory(hi.messages);
+    refreshSubchats();
   } catch (e) {
     $("status").textContent = "ошибка соединения: " + e;
+  }
+}
+
+function subEventHtml(ev) {
+  if (ev.type === "tool_call")
+    return "<div class='sub-ev'><span class='tag'>tool_call</span> " +
+      esc(ev.name) + "(" + esc(JSON.stringify(ev.args)) + ")</div>";
+  if (ev.type === "tool_result")
+    return "<div class='sub-ev'><span class='tag'>tool_result</span> " +
+      esc(ev.name || "tool") + " → " + esc(String(ev.content).slice(0, 300)) + "</div>";
+  if (ev.type === "answer")
+    return "<div class='sub-ev'><span class='tag'>answer</span> " + esc(ev.text.slice(0, 300)) + "</div>";
+  return "";
+}
+
+async function refreshSubchats() {
+  const box = $("subchats");
+  let list = [];
+  try {
+    list = (await fetch("/api/subchats").then((r) => r.json())).subchats || [];
+  } catch (e) { return; }
+  if (!list.length) {
+    box.innerHTML = "<div class='ev status'><span class='tag'>idle</span> пока пусто — субагент запускается через ask_subagent</div>";
+    return;
+  }
+  box.innerHTML = "";
+  for (const s of list) {
+    const d = document.createElement("details");
+    d.className = "sub";
+    if (s.status === "running") d.open = true;
+    d.innerHTML = "<summary>#" + s.id + " [" + esc(s.status) + "] " + esc(s.model) +
+      " · " + esc(s.task.slice(0, 100)) + " <i>(" + s.events + " событий)</i></summary>" +
+      "<div class='sub-body'>загрузка…</div>";
+    box.appendChild(d);
+    try {
+      const full = (await fetch("/api/subchat?id=" + s.id).then((r) => r.json())).subchat;
+      d.querySelector(".sub-body").innerHTML =
+        (full.events || []).map(subEventHtml).join("") +
+        "<div class='sub-result'>итог: " + esc(full.result || "") + "</div>";
+    } catch (e) { /* оставим «загрузка…» */ }
   }
 }
 
@@ -225,6 +277,7 @@ form.addEventListener("submit", async (e) => {
           } else if (ev.type === "tool_result") {
             addEvent("tool_result", (ev.name || "tool") + " → " + String(ev.content).slice(0, 200), ev);
             addMsg("tool", "[" + esc(ev.name || "tool") + "] " + esc(String(ev.content).slice(0, 500)));
+            if (ev.name === "ask_subagent") refreshSubchats();
           } else if (ev.type === "answer") {
             answerText = ev.text;
             thinking.innerHTML = esc(ev.text);
@@ -232,6 +285,7 @@ form.addEventListener("submit", async (e) => {
             addEvent("answer", ev.text.slice(0, 200), ev);
           } else if (ev.type === "done") {
             addEvent("done", "ход завершён, сообщений: " + ev.message_count, ev);
+            refreshSubchats();
           } else if (ev.type === "error") {
             thinking.className = "msg error";
             thinking.textContent = "Ошибка: " + ev.text;

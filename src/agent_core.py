@@ -4,9 +4,9 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src import config, db
-from src.graph import build_agent
+from src.graph import build_agent, events_from_chunk
 from src.history_store import save_history
-from src.subagent import ask_subagent, reset_subagent
+from src.subagent import ask_subagent, clear_subchats, reset_subagent
 from src.tools import BASE_TOOLS
 
 SYSTEM_PROMPT = (
@@ -55,6 +55,7 @@ def current_messages() -> list:
 
 def reset_thread() -> None:
     get_checkpointer().delete_thread(config.THREAD_ID)
+    clear_subchats()
 
 
 def set_model(name: str) -> str:
@@ -80,30 +81,6 @@ def run_turn(user_text: str) -> str:
     save_history(result["messages"])
     answer = result["messages"][-1].content
     return str(answer)
-
-
-def events_from_chunk(chunk: dict) -> list:
-    """Превратить обновление графа (stream_mode='updates') в плоские события.
-
-    События: tool_call {name, args, id}, tool_result {name, content, tool_call_id},
-    answer {text}. Используется веб-интерфейсом для панели «под капотом».
-    """
-    events = []
-    for payload in chunk.values():
-        messages = payload.get("messages", []) if isinstance(payload, dict) else []
-        for message in messages:
-            kind = getattr(message, "type", "")
-            if kind == "ai":
-                for call in getattr(message, "tool_calls", []) or []:
-                    events.append({"type": "tool_call", "name": call.get("name", "?"),
-                                   "args": call.get("args", {}), "id": call.get("id", "")})
-                if getattr(message, "content", ""):
-                    events.append({"type": "answer", "text": str(message.content)})
-            elif kind == "tool":
-                events.append({"type": "tool_result", "name": getattr(message, "name", ""),
-                               "content": str(getattr(message, "content", "")),
-                               "tool_call_id": getattr(message, "tool_call_id", "")})
-    return events
 
 
 def stream_turn(user_text: str):

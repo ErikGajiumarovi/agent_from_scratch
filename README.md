@@ -44,7 +44,7 @@ src/
   config.py         # константы, провайдер (AGENT_PROVIDER), создание модели
   tools.py          # базовые инструменты + BASE_TOOLS
   graph.py          # построение графа LangGraph
-  subagent.py       # субагент и инструмент ask_subagent
+  subagent.py       # субагент, ask_subagent и журнал субчатов
   agent_core.py     # главный агент, CONFIG, run_turn, stream_turn
   db.py             # SQLite: файл БД и checkpointer LangGraph
   history_store.py  # экспорт в history.json, печать и dump_messages для API
@@ -70,7 +70,8 @@ src/
   страница чата, сырые события хода через SSE (`GET /api/chat?text=...`),
   состояние треда (`GET /api/history`), статус (`GET /api/status`),
   сброс (`POST /api/reset`), смена модели (`POST /api/model {"name": "..."}`,
-  список — `GET /api/models`).
+  список — `GET /api/models`), субчаты (`GET /api/subchats`,
+  `GET /api/subchat?id=N`).
 - **История** (`src/history_store.py`): экспорт в `history.json` и печать; консольный цикл — `src/cli.py`,
   точка входа — `agent.py`.
 - **Память диалога** — SQLite через `SqliteSaver` (`src/db.py`, файл `data/agent.db`,
@@ -88,6 +89,13 @@ src/
   запросы идут на Codex-бэкенд (`chatgpt.com/backend-api/codex/responses`,
   обязательно `stream: true`). Запуск: `AGENT_PROVIDER=chatgpt python agent.py`.
   Токены из файла никуда не коммитятся и не печатаются в логи.
+
+## Субчаты
+
+Каждый запуск `ask_subagent` пишется в журнал (`src/subagent.py`): задача,
+модель, свои события (вызовы/результаты инструментов, ответ) и итог.
+В вебе — отдельная секция «Субчаты»: карточки обновляются сразу, как
+субагент закончил (и в конце хода), `/reset` очищает журнал вместе с историей.
 
 ## Смена модели на лету
 
