@@ -2,9 +2,8 @@
 """Главный агент: сборка графа, конфиг треда, выполнение ходов диалога."""
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langgraph.checkpoint.memory import InMemorySaver
 
-from src import config
+from src import config, db
 from src.graph import build_agent
 from src.history_store import save_history
 from src.subagent import ask_subagent
@@ -18,11 +17,19 @@ SYSTEM_PROMPT = (
     "Не выдумывай результаты инструментов."
 )
 
-checkpointer = InMemorySaver()
+checkpointer = None
 CONFIG = {
     "configurable": {"thread_id": config.THREAD_ID},
     "recursion_limit": config.RECURSION_LIMIT,
 }
+
+
+def get_checkpointer():
+    """Лениво вернуть SQLite-checkpointer (создаёт БД при первом вызове)."""
+    global checkpointer
+    if checkpointer is None:
+        checkpointer = db.get_checkpointer()
+    return checkpointer
 
 _agent = None
 
@@ -36,7 +43,7 @@ def get_agent():
             model,
             [*BASE_TOOLS, ask_subagent],
             SYSTEM_PROMPT,
-            checkpointer=checkpointer,
+            checkpointer=get_checkpointer(),
         )
     return _agent
 
@@ -47,7 +54,7 @@ def current_messages() -> list:
 
 
 def reset_thread() -> None:
-    checkpointer.delete_thread(config.THREAD_ID)
+    get_checkpointer().delete_thread(config.THREAD_ID)
 
 
 def run_turn(user_text: str) -> str:

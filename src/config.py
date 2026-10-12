@@ -9,6 +9,7 @@ from langchain_ollama import ChatOllama
 MODEL = "gemma4:31b"
 BASE_URL = "https://ollama.com"
 HISTORY_FILE = "history.json"
+DB_PATH = os.getenv("AGENT_DB_PATH", "data/agent.db")
 THREAD_ID = "console"
 RECURSION_LIMIT = 12
 
