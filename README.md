@@ -1,4 +1,4 @@
-# Простой ИИ-агент (Python + LangGraph + Ollama Cloud)
+# Простой ИИ-агент (Python + LangGraph + OpenRouter)
 
 Минимальный пример агента с параллельным вызовом инструментов и одним субагентом.
 
@@ -7,7 +7,8 @@
 ```bash
 # Нужен Python 3.10+
 pip install -r requirements.txt
-export OLLAMA_API_KEY="ваш_ключ_с_ollama.com/settings/keys"
+export OPENROUTER_API_KEY="ваш_ключ_с_openrouter.ai/settings/keys"
+# по желанию: OPENROUTER_MODEL="другая_модель" (по умолчанию google/gemma-4-31b-it:free)
 python agent.py
 ```
 
@@ -37,7 +38,7 @@ web.py              # точка входа веб-интерфейса (тон�
 frontend/
   index.html        # страница: чат + панель «под капотом» (без зависимостей)
 src/
-  config.py         # константы, ключ OLLAMA_API_KEY, создание модели
+  config.py         # константы, ключ OPENROUTER_API_KEY, создание модели
   tools.py          # базовые инструменты + BASE_TOOLS
   graph.py          # построение графа LangGraph
   subagent.py       # субагент и инструмент ask_subagent
@@ -86,5 +87,5 @@ src/
 
 ## Ключ
 
-Не коммитьте `OLLAMA_API_KEY` в git. Если ключ опубликован, отзовите его в
-[настройках Ollama](https://ollama.com/settings/keys).
+Не коммитьте `OPENROUTER_API_KEY` в git. Если ключ опубликован, отзовите его в
+[настройках OpenRouter](https://openrouter.ai/settings/keys).

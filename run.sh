@@ -4,7 +4,7 @@
 # Использование:
 #   chmod +x run.sh
 #   ./run.sh
-#   OLLAMA_API_KEY="ваш_ключ" ./run.sh
+#   OPENROUTER_API_KEY="ваш_ключ" ./run.sh
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -26,11 +26,11 @@ python3 -m pip install -q -r requirements.txt
 echo "OK: зависимости установлены."
 
 echo ""
-echo "== 3/3 Запуск агента (gemma4:31b via Ollama Cloud) =="
-if [[ -z "${OLLAMA_API_KEY:-}" ]]; then
-  echo "ВНИМАНИЕ: OLLAMA_API_KEY не задан."
-  echo "Задайте его так: OLLAMA_API_KEY=\"ваш_ключ\" ./run.sh"
-  echo "Ключ: https://ollama.com/settings/keys"
+echo "== 3/3 Запуск агента (OpenRouter, модель: ${OPENROUTER_MODEL:-google/gemma-4-31b-it:free}) =="
+if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+  echo "ВНИМАНИЕ: OPENROUTER_API_KEY не задан."
+  echo "Задайте его так: OPENROUTER_API_KEY=\"ваш_ключ\" ./run.sh"
+  echo "Ключ: https://openrouter.ai/settings/keys"
   echo ""
 fi
 
