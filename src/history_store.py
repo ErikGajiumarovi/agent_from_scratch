@@ -15,6 +15,19 @@ def save_history(messages: list) -> None:
         print(f"[Предупреждение] Не смог сохранить историю: {exc}")
 
 
+def dump_messages(messages: list) -> list:
+    """Сериализовать сообщения в JSON-совместимые словари (для API/веба)."""
+    dumped = []
+    for message in messages:
+        try:
+            data = message.model_dump()
+        except Exception:
+            data = {"type": getattr(message, "type", "?"),
+                    "content": str(getattr(message, "content", ""))}
+        dumped.append(json.loads(json.dumps(data, ensure_ascii=False, default=str)))
+    return dumped
+
+
 def print_history(messages: list) -> None:
     print(f"\n[История: {len(messages)} сообщений]")
     for index, message in enumerate(messages):

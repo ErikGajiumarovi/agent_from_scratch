@@ -12,6 +12,8 @@ HISTORY_FILE = "history.json"
 DB_PATH = os.getenv("AGENT_DB_PATH", "data/agent.db")
 THREAD_ID = "console"
 RECURSION_LIMIT = 12
+WEB_HOST = os.getenv("AGENT_HOST", "127.0.0.1")
+WEB_PORT = int(os.getenv("AGENT_PORT", "8000"))
 
 OLLAMA_KEY_URL = "https://ollama.com/settings/keys"
 

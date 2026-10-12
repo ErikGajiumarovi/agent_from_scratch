@@ -16,19 +16,36 @@ python agent.py
 перезапуск программы; дополнительно каждый ход экспортируется в `history.json`
 для просмотра.
 
+## Веб-интерфейс
+
+```bash
+python web.py
+# открыть http://127.0.0.1:8000 (хост/порт: AGENT_HOST, AGENT_PORT)
+```
+
+Слева — обычный чат, справа — «под капотом»: сырые события текущего хода
+(вызовы инструментов с аргументами, их результаты, ответы модели — всё в
+реальном времени через SSE) и полное состояние треда (каждое сообщение
+с полным JSON). Кнопки «Обновить» и «Сбросить диалог». История общая
+с консольным клиентом — та же SQLite-база.
+
 ## Структура
 
 ```
-agent.py            # точка входа (тонкая обёртка над src.cli:main)
+agent.py            # точка входа консольного клиента (тонкая обёртка над src.cli:main)
+web.py              # точка входа веб-интерфейса (тонкая обёртка над src.web:main)
+frontend/
+  index.html        # страница: чат + панель «под капотом» (без зависимостей)
 src/
   config.py         # константы, ключ OLLAMA_API_KEY, создание модели
   tools.py          # базовые инструменты + BASE_TOOLS
   graph.py          # построение графа LangGraph
   subagent.py       # субагент и инструмент ask_subagent
-  agent_core.py     # главный агент, CONFIG, run_turn
+  agent_core.py     # главный агент, CONFIG, run_turn, stream_turn
   db.py             # SQLite: файл БД и checkpointer LangGraph
-  history_store.py  # экспорт в history.json и печать истории
+  history_store.py  # экспорт в history.json, печать и dump_messages для API
   cli.py            # консольный цикл (/history, /reset)
+  web.py            # HTTP-сервер: статика + /api/status|history|chat(SSE)|reset
 ```
 
 ## Как устроено
@@ -40,7 +57,13 @@ src/
   `convert_distance`, `date_info`, `count_words`, `format_json`.
 - **`ask_subagent`** (`src/subagent.py`) передаёт отдельную задачу изолированному субагенту. У него
   свой короткий системный промпт и те же основные инструменты.
-- **Главный агент** (`src/agent_core.py`): системный промпт, checkpointer, `run_turn`.
+- **Главный агент** (`src/agent_core.py`): системный промпт, checkpointer, `run_turn`
+  и `stream_turn` (тот же ход, но события `tool_call`/`tool_result`/`answer` идут
+  наружу по мере появления через `graph.stream`).
+- **Веб** (`src/web.py` + `frontend/index.html`, только стандартная библиотека):
+  страница чата, сырые события хода через SSE (`GET /api/chat?text=...`),
+  состояние треда (`GET /api/history`), статус (`GET /api/status`),
+  сброс (`POST /api/reset`).
 - **История** (`src/history_store.py`): экспорт в `history.json` и печать; консольный цикл — `src/cli.py`,
   точка входа — `agent.py`.
 - **Память диалога** — SQLite через `SqliteSaver` (`src/db.py`, файл `data/agent.db`,
