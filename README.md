@@ -1,6 +1,8 @@
-# Простой ИИ-агент (Python + LangGraph + OpenRouter)
+# Простой ИИ-агент (Python + LangGraph)
 
 Минимальный пример агента с параллельным вызовом инструментов и одним субагентом.
+Провайдер модели переключается переменной `AGENT_PROVIDER`: `openrouter`
+(по умолчанию) или `chatgpt` (обычная ChatGPT-подписка через `auth.json`).
 
 ## Запуск
 
@@ -38,7 +40,7 @@ web.py              # точка входа веб-интерфейса (тон�
 frontend/
   index.html        # страница: чат + панель «под капотом» (без зависимостей)
 src/
-  config.py         # константы, ключ OPENROUTER_API_KEY, создание модели
+  config.py         # константы, провайдер (AGENT_PROVIDER), создание модели
   tools.py          # базовые инструменты + BASE_TOOLS
   graph.py          # построение графа LangGraph
   subagent.py       # субагент и инструмент ask_subagent
@@ -47,6 +49,8 @@ src/
   history_store.py  # экспорт в history.json, печать и dump_messages для API
   cli.py            # консольный цикл (/history, /reset)
   web.py            # HTTP-сервер: статика + /api/status|history|chat(SSE)|reset
+  chatgpt_auth.py   # auth.json подписки: чтение и refresh OAuth-токенов
+  chatgpt_model.py  # LangChain-модель поверх Codex-бэкенда (Responses API + SSE)
 ```
 
 ## Как устроено
@@ -70,6 +74,17 @@ src/
 - **Память диалога** — SQLite через `SqliteSaver` (`src/db.py`, файл `data/agent.db`,
   путь меняется переменной `AGENT_DB_PATH`): состояние графа сохраняется между
   запусками, `/reset` очищает тред через `delete_thread`.
+
+## Провайдеры (`AGENT_PROVIDER`)
+
+- `openrouter` (по умолчанию): нужен `OPENROUTER_API_KEY`, модель — `OPENROUTER_MODEL`.
+- `chatgpt`: работает через обычную ChatGPT-подписку, читает OAuth-токены
+  из `~/.codex/auth.json` (файл создаёт `codex login`; путь меняется через
+  `CHATGPT_AUTH_FILE`), модель — `CHATGPT_MODEL` (по умолчанию `gpt-5.5`).
+  Протухший `access_token` обновляется через `refresh_token` автоматически,
+  запросы идут на Codex-бэкенд (`chatgpt.com/backend-api/codex/responses`,
+  обязательно `stream: true`). Запуск: `AGENT_PROVIDER=chatgpt python agent.py`.
+  Токены из файла никуда не коммитятся и не печатаются в логи.
 
 Примеры: «Переведи 100 F в C», «Сколько слов в этом тексте?»,
 «Какой день недели был 2026-01-01?», «Отформатируй этот JSON». Если модель

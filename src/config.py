@@ -6,8 +6,13 @@ import sys
 
 from langchain_openai import ChatOpenAI
 
-MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
-BASE_URL = "https://openrouter.ai/api/v1"
+from src.chatgpt_model import ChatGPTResponsesModel
+
+PROVIDER = os.getenv("AGENT_PROVIDER", "openrouter").strip().lower()
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
+OPENROUTER_URL = "https://openrouter.ai/api/v1"
+CHATGPT_MODEL = os.getenv("CHATGPT_MODEL", "gpt-5.5")
+MODEL = CHATGPT_MODEL if PROVIDER == "chatgpt" else OPENROUTER_MODEL
 HISTORY_FILE = "history.json"
 DB_PATH = os.getenv("AGENT_DB_PATH", "data/agent.db")
 THREAD_ID = "console"
@@ -23,7 +28,15 @@ def get_api_key() -> str:
 
 
 def require_api_key() -> str:
-    """Проверить наличие ключа, выйти с подсказкой если его нет."""
+    """Проверить авторизацию активного провайдера, выйти с подсказкой если нет."""
+    if PROVIDER == "chatgpt":
+        from src import chatgpt_auth
+        try:
+            chatgpt_auth.load_auth()
+        except chatgpt_auth.ChatGPTAuthError as exc:
+            print(f"[Ошибка] {exc}")
+            sys.exit(1)
+        return "chatgpt-subscription"
     api_key = get_api_key()
     if not api_key:
         print(f"[Ошибка] Задайте OPENROUTER_API_KEY. Ключ: {OPENROUTER_KEY_URL}")
@@ -31,7 +44,10 @@ def require_api_key() -> str:
     return api_key
 
 
-def create_model() -> ChatOpenAI:
-    """Создать модель через OpenRouter (OpenAI-совместимый API)."""
-    return ChatOpenAI(api_key=require_api_key(), base_url=BASE_URL,
-                      model=MODEL, temperature=0)
+def create_model():
+    """Создать модель активного провайдера (openrouter | chatgpt)."""
+    if PROVIDER == "chatgpt":
+        require_api_key()
+        return ChatGPTResponsesModel(model=CHATGPT_MODEL)
+    return ChatOpenAI(api_key=require_api_key(), base_url=OPENROUTER_URL,
+                      model=OPENROUTER_MODEL, temperature=0)

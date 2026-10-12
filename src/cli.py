@@ -7,7 +7,7 @@ from src.history_store import print_history as render_history
 
 def main() -> None:
     config.require_api_key()
-    print(f"LangGraph + OpenRouter ({config.MODEL})")
+    print(f"LangGraph + {config.PROVIDER} ({config.MODEL})")
     print("Инструменты: calculator, get_time, convert_temperature, convert_distance,")
     print("            date_info, count_words, format_json, ask_subagent")
     print("Команды: /history, /reset; пустая строка — выход")
