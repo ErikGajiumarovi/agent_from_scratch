@@ -10,7 +10,7 @@ def main() -> None:
     print(f"LangGraph + {config.PROVIDER} ({config.MODEL})")
     print("Инструменты: calculator, get_time, convert_temperature, convert_distance,")
     print("            date_info, count_words, format_json, ask_subagent")
-    print("Команды: /history, /reset; пустая строка — выход")
+    print("Команды: /history, /reset, /model [имя]; пустая строка — выход")
 
     while True:
         try:
@@ -27,6 +27,18 @@ def main() -> None:
         if question == "/reset":
             agent_core.reset_thread()
             print("[История очищена]")
+            continue
+        if question == "/model" or question.startswith("/model "):
+            name = question[len("/model"):].strip()
+            if not name:
+                print(f"[Модель: {config.MODEL}]")
+                print("Доступны: " + ", ".join(config.available_models()))
+                print("Смена: /model <имя> (можно вписать любое имя вручную)")
+            else:
+                try:
+                    print(f"[Модель: {agent_core.set_model(name)}]")
+                except Exception as exc:
+                    print(f"[Ошибка] {exc}")
             continue
         try:
             print(f"\nАгент: {agent_core.run_turn(question)}")

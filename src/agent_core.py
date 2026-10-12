@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src import config, db
 from src.graph import build_agent
 from src.history_store import save_history
-from src.subagent import ask_subagent
+from src.subagent import ask_subagent, reset_subagent
 from src.tools import BASE_TOOLS
 
 SYSTEM_PROMPT = (
@@ -55,6 +55,19 @@ def current_messages() -> list:
 
 def reset_thread() -> None:
     get_checkpointer().delete_thread(config.THREAD_ID)
+
+
+def set_model(name: str) -> str:
+    """Переключить модель на лету: пересобрать агента и субагента."""
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("пустое имя модели")
+    config.MODEL = name
+    global _agent
+    _agent = None
+    reset_subagent()
+    get_agent()  # собрать сразу, чтобы ошибка вылезла здесь, а не в ходе
+    return config.MODEL
 
 
 def run_turn(user_text: str) -> str:

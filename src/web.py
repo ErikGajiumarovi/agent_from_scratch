@@ -4,10 +4,12 @@
 Только стандартная библиотека: ThreadingHTTPServer отдаёт frontend/index.html
 и JSON/SSE API:
 - GET  /             — страница чата
-- GET  /api/status   — модель, тред, путь к БД, число сообщений
+- GET  /api/status   — провайдер, модель, тред, путь к БД, число сообщений
+- GET  /api/models   — провайдер, текущая модель, курированный список
 - GET  /api/history  — сырые сообщения текущего треда
 - GET  /api/chat?text=... — ход диалога, события идут через SSE
 - POST /api/reset    — очистить тред
+- POST /api/model    — переключить модель (JSON {"name": "..."})
 """
 
 import json
@@ -54,9 +56,13 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(page)
         elif parsed.path == "/api/status":
-            _send_json(self, {"model": config.MODEL, "thread_id": config.THREAD_ID,
+            _send_json(self, {"provider": config.PROVIDER, "model": config.MODEL,
+                              "thread_id": config.THREAD_ID,
                               "db_path": config.DB_PATH,
                               "message_count": len(agent_core.current_messages())})
+        elif parsed.path == "/api/models":
+            _send_json(self, {"provider": config.PROVIDER, "current": config.MODEL,
+                              "models": config.available_models()})
         elif parsed.path == "/api/history":
             _send_json(self, {"messages": dump_messages(agent_core.current_messages())})
         elif parsed.path == "/api/chat":
@@ -89,6 +95,16 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/reset":
             agent_core.reset_thread()
             _send_json(self, {"ok": True})
+        elif parsed.path == "/api/model":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(length) or b"{}")
+                name = agent_core.set_model(body.get("name", ""))
+                _send_json(self, {"ok": True, "model": name})
+            except (ValueError, KeyError) as exc:
+                _send_json(self, {"ok": False, "error": str(exc)}, status=400)
+            except Exception as exc:
+                _send_json(self, {"ok": False, "error": str(exc)[:300]}, status=500)
         else:
             _send_json(self, {"error": "not found"}, status=404)
 

@@ -25,6 +25,12 @@ def get_subagent():
     return _subagent
 
 
+def reset_subagent() -> None:
+    """Сбросить субагента, чтобы следующий вызов собрал его заново."""
+    global _subagent
+    _subagent = None
+
+
 @tool
 def ask_subagent(task: str) -> str:
     """Передать отдельную задачу вспомогательному агенту и получить результат."""

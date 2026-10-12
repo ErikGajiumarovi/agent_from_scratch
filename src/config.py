@@ -11,7 +11,19 @@ from src.chatgpt_model import ChatGPTResponsesModel
 PROVIDER = os.getenv("AGENT_PROVIDER", "openrouter").strip().lower()
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
+# Проверенные бесплатные модели OpenRouter с поддержкой tools и русского.
+OPENROUTER_MODELS = [
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "dots-studio/dots-3-note-preview:free",
+]
 CHATGPT_MODEL = os.getenv("CHATGPT_MODEL", "gpt-5.5")
+# Проверенные модели ChatGPT-подписки (gpt-5.5; остальные имена Codex-бэкенд
+# этого аккаунта отвергает — но можно вписать любое вручную).
+CHATGPT_MODELS = ["gpt-5.5"]
 MODEL = CHATGPT_MODEL if PROVIDER == "chatgpt" else OPENROUTER_MODEL
 HISTORY_FILE = "history.json"
 DB_PATH = os.getenv("AGENT_DB_PATH", "data/agent.db")
@@ -44,10 +56,15 @@ def require_api_key() -> str:
     return api_key
 
 
+def available_models() -> list:
+    """Курированный список моделей активного провайдера."""
+    return list(CHATGPT_MODELS if PROVIDER == "chatgpt" else OPENROUTER_MODELS)
+
+
 def create_model():
     """Создать модель активного провайдера (openrouter | chatgpt)."""
     if PROVIDER == "chatgpt":
         require_api_key()
-        return ChatGPTResponsesModel(model=CHATGPT_MODEL)
+        return ChatGPTResponsesModel(model=MODEL)
     return ChatOpenAI(api_key=require_api_key(), base_url=OPENROUTER_URL,
-                      model=OPENROUTER_MODEL, temperature=0)
+                      model=MODEL, temperature=0)

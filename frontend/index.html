@@ -14,6 +14,8 @@
   header button { background: #444; color: #eee; border: 0; border-radius: 6px;
                   padding: 6px 12px; cursor: pointer; }
   header button:hover { background: #555; }
+  header select { background: #444; color: #eee; border: 0; border-radius: 6px;
+                  padding: 6px 8px; max-width: 280px; cursor: pointer; }
   main { display: flex; gap: 12px; padding: 12px; height: calc(100vh - 49px); }
   section { background: #fff; border: 1px solid #ddd; border-radius: 8px;
             display: flex; flex-direction: column; min-width: 0; }
@@ -55,6 +57,7 @@
 <body>
 <header>
   <h1>ИИ-агент</h1>
+  <select id="model" title="Модель"></select>
   <span class="status" id="status">подключение…</span>
   <button id="btn-refresh" type="button">Обновить</button>
   <button id="btn-reset" type="button">Сбросить диалог</button>
@@ -134,17 +137,58 @@ function renderHistory(messages) {
 
 async function refresh() {
   try {
-    const [st, hi] = await Promise.all([
+    const [st, hi, mo] = await Promise.all([
       fetch("/api/status").then((r) => r.json()),
       fetch("/api/history").then((r) => r.json()),
+      fetch("/api/models").then((r) => r.json()),
     ]);
     $("status").textContent =
-      "модель " + st.model + " · тред " + st.thread_id + " · " + st.message_count + " сообщений · " + st.db_path;
+      st.provider + " · тред " + st.thread_id + " · " + st.message_count + " сообщений · " + st.db_path;
+    renderModelSelect(mo);
     renderHistory(hi.messages);
   } catch (e) {
     $("status").textContent = "ошибка соединения: " + e;
   }
 }
+
+function renderModelSelect(mo) {
+  const sel = $("model");
+  const current = mo.current;
+  const names = mo.models.includes(current) ? mo.models : [current, ...mo.models];
+  sel.innerHTML = "";
+  names.forEach((n) => {
+    const o = document.createElement("option");
+    o.value = n;
+    o.textContent = n + (n === mo.models[0] ? "" : "");
+    if (n === current) o.selected = true;
+    sel.appendChild(o);
+  });
+  const custom = document.createElement("option");
+  custom.value = "__custom__";
+  custom.textContent = "другая… (ввести вручную)";
+  sel.appendChild(custom);
+  sel.title = "Провайдер: " + mo.provider + ". Выбор «другая» — произвольное имя модели.";
+}
+
+$("model").addEventListener("change", async (e) => {
+  let name = e.target.value;
+  if (name === "__custom__") {
+    name = (prompt("Имя модели:", "") || "").trim();
+    if (!name) { refresh(); return; }
+  }
+  try {
+    const r = await fetch("/api/model", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({name}),
+    }).then((r) => r.json());
+    if (r.ok) addEvent("status", "модель переключена: " + r.model, r);
+    else addMsg("error", "Не переключил модель: " + (r.error || "?"));
+  } catch (err) {
+    addMsg("error", "Ошибка соединения: " + err);
+  }
+  refresh();
+});
 
 // --- отправка: SSE-стрим /api/chat, живое обновление обеих панелей ---
 let busy = false;
