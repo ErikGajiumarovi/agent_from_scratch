@@ -1,1 +1,2 @@
-requests>=2.31
+langgraph>=1.0
+langchain-ollama>=1.0

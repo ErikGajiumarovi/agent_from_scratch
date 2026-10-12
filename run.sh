@@ -11,7 +11,11 @@ cd "$(dirname "$0")"
 
 echo "== 1/3 Проверка Python =="
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "ОШИБКА: python3 не найден. Установите Python 3.9+."
+  echo "ОШИБКА: python3 не найден. Установите Python 3.10+."
+  exit 1
+fi
+if ! python3 -c 'import sys; sys.exit(sys.version_info < (3, 10))'; then
+  echo "ОШИБКА: для LangGraph нужен Python 3.10 или новее."
   exit 1
 fi
 python3 --version
