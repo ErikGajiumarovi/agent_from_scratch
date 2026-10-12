@@ -52,6 +52,7 @@ src/
   web.py            # HTTP-сервер: статика + /api/status|history|chat(SSE)|reset
   chatgpt_auth.py   # auth.json подписки: чтение и refresh OAuth-токенов
   chatgpt_model.py  # LangChain-модель поверх Codex-бэкенда (Responses API + SSE)
+  chatgpt_login.py  # вход через подписку без Codex CLI (точка входа — login.py)
 ```
 
 ## Как устроено
@@ -82,9 +83,11 @@ src/
 
 - `openrouter` (по умолчанию): нужен `OPENROUTER_API_KEY`, модель — `OPENROUTER_MODEL`.
 - `chatgpt`: работает через обычную ChatGPT-подписку, читает OAuth-токены
-  из `~/.codex/auth.json` (файл создаёт `codex login`; путь меняется через
-  `CHATGPT_AUTH_FILE`), модель — `CHATGPT_MODEL` (по умолчанию `gpt-6-luna`,
-  проверена также `gpt-5.5`).
+  из `~/.codex/auth.json` (путь меняется через `CHATGPT_AUTH_FILE`).
+  Файл создаётся либо `codex login`, либо нашим `python login.py` — тот же
+  официальный OAuth-флоу (PKCE + локальный callback на :1455), ставить Codex
+  не нужно; полученный файл совместим и с самим Codex.
+  Модель — `CHATGPT_MODEL` (по умолчанию `gpt-6-luna`, проверена также `gpt-5.5`).
   Протухший `access_token` обновляется через `refresh_token` автоматически,
   запросы идут на Codex-бэкенд (`chatgpt.com/backend-api/codex/responses`,
   обязательно `stream: true`). Запуск: `AGENT_PROVIDER=chatgpt python agent.py`.
