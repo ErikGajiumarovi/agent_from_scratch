@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Сохранение и показ истории диалога."""
+"""Экспорт истории диалога в history.json и сериализация для API."""
 
 import json
 
@@ -26,16 +26,3 @@ def dump_messages(messages: list) -> list:
                     "content": str(getattr(message, "content", ""))}
         dumped.append(json.loads(json.dumps(data, ensure_ascii=False, default=str)))
     return dumped
-
-
-def print_history(messages: list) -> None:
-    print(f"\n[История: {len(messages)} сообщений]")
-    for index, message in enumerate(messages):
-        role = {"ai": "assistant", "human": "user"}.get(message.type, message.type)
-        calls = getattr(message, "tool_calls", []) or []
-        if calls:
-            for call in calls:
-                print(f"{index:02d} [{role}] tool_call: {call['name']}({call['args']})")
-        content = message.content
-        if content:
-            print(f"{index:02d} [{role}] {content}")

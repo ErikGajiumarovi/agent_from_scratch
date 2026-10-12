@@ -215,4 +215,4 @@ def main() -> None:
           f"файл {chatgpt_auth.auth_file()}.")
     if not account_id:
         print("[Внимание] account_id не найден в токенах — при ошибках перелогиньтесь.")
-    print("Проверка: AGENT_PROVIDER=chatgpt python agent.py")
+    print("Проверка: AGENT_PROVIDER=chatgpt python web.py (открыть http://127.0.0.1:8000)")

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Простой запуск примитивного ИИ-агента:
-# устанавливает зависимости и запускает agent.py
+# Запуск веб-интерфейса ИИ-агента:
+# устанавливает зависимости и запускает web.py
 # Использование:
 #   chmod +x run.sh
 #   ./run.sh
+#   AGENT_PROVIDER=chatgpt ./run.sh
 #   OPENROUTER_API_KEY="ваш_ключ" ./run.sh
 set -euo pipefail
 
@@ -26,12 +27,16 @@ python3 -m pip install -q -r requirements.txt
 echo "OK: зависимости установлены."
 
 echo ""
-echo "== 3/3 Запуск агента (OpenRouter, модель: ${OPENROUTER_MODEL:-google/gemma-4-31b-it:free}) =="
-if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
-  echo "ВНИМАНИЕ: OPENROUTER_API_KEY не задан."
-  echo "Задайте его так: OPENROUTER_API_KEY=\"ваш_ключ\" ./run.sh"
-  echo "Ключ: https://openrouter.ai/settings/keys"
-  echo ""
+echo "== 3/3 Запуск веб-интерфейса (провайдер: ${AGENT_PROVIDER:-openrouter}) =="
+if [[ "${AGENT_PROVIDER:-openrouter}" == "chatgpt" ]]; then
+  echo "Нужен вход через подписку: python3 login.py (файл ~/.codex/auth.json)"
+else
+  if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+    echo "ВНИМАНИЕ: OPENROUTER_API_KEY не задан."
+    echo "Задайте его так: OPENROUTER_API_KEY=\"ваш_ключ\" ./run.sh"
+    echo "Ключ: https://openrouter.ai/settings/keys"
+    echo ""
+  fi
 fi
 
-exec python3 agent.py "$@"
+exec python3 web.py "$@"

@@ -71,23 +71,11 @@ def set_model(name: str) -> str:
     return config.MODEL
 
 
-def run_turn(user_text: str) -> str:
-    messages = current_messages()
-    new_messages = [HumanMessage(content=user_text)]
-    if not messages:
-        new_messages.insert(0, SystemMessage(content=SYSTEM_PROMPT))
-
-    result = get_agent().invoke({"messages": new_messages}, CONFIG)
-    save_history(result["messages"])
-    answer = result["messages"][-1].content
-    return str(answer)
-
-
 def stream_turn(user_text: str):
     """Выполнить ход диалога, по ходу дела отдавая события (генератор).
 
-    Тот же run_turn, но через graph.stream: наружу идут tool_call/tool_result/
-    answer по мере их появления, в конце — done {message_count}.
+    Через graph.stream наружу идут tool_call/tool_result/answer
+    по мере их появления, в конце — done {message_count}.
     """
     messages = current_messages()
     new_messages = [HumanMessage(content=user_text)]
