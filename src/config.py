@@ -20,10 +20,10 @@ OPENROUTER_MODELS = [
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     "dots-studio/dots-3-note-preview:free",
 ]
-CHATGPT_MODEL = os.getenv("CHATGPT_MODEL", "gpt-5.5")
-# Проверенные модели ChatGPT-подписки (gpt-5.5; остальные имена Codex-бэкенд
+CHATGPT_MODEL = os.getenv("CHATGPT_MODEL", "gpt-6-luna")
+# Проверенные модели ChatGPT-подписки (остальные имена Codex-бэкенд
 # этого аккаунта отвергает — но можно вписать любое вручную).
-CHATGPT_MODELS = ["gpt-5.5"]
+CHATGPT_MODELS = ["gpt-6-luna", "gpt-5.5"]
 MODEL = CHATGPT_MODEL if PROVIDER == "chatgpt" else OPENROUTER_MODEL
 HISTORY_FILE = "history.json"
 DB_PATH = os.getenv("AGENT_DB_PATH", "data/agent.db")
